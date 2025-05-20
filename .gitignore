@@ -1,0 +1,15 @@
+#gitで管理しないファイルの指定
+#拡張子で除外
+*.launch
+
+#ディレクトリで指定
+/.vscode/
+/.settings/
+Debug/
+Release/
+#ファイル名で指定
+.mxproject
+
+
+#例外ファイルを指定
+!
