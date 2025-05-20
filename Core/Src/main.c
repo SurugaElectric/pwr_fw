@@ -90,63 +90,64 @@ int main(void)
   MX_CAN_Init();
   /* USER CODE BEGIN 2 */
   // 基底
-  const int control_ms = 2;
-  const int debug_ms = 100;
-  uint32_t time = 0;
-  uint32_t time_debug = 0;
+    const int control_ms = 2;
+    const int debug_ms = 100;
+    uint32_t time = 0;
+    uint32_t time_debug = 0;
 
-  CAN_FilterTypeDef filter;
-  uint32_t fId   =  0x000 << 21;        // フィルターID
-  uint32_t fMask = (0x7F0 << 21) | 0x4; // フィルターマスク
+    CAN_FilterTypeDef filter;
+    uint32_t fId   =  0x000 << 21;        // フィルターID
+    uint32_t fMask = (0x7F0 << 21) | 0x4; // フィルターマスク
 
-  filter.FilterIdHigh         = fId >> 16;             // フィルターIDの上位16ビット
-  filter.FilterIdLow          = fId;                   // フィルターIDの下位16ビット
-  filter.FilterMaskIdHigh     = fMask >> 16;           // フィルターマスクの上位16ビット
-  filter.FilterMaskIdLow      = fMask;                 // フィルターマスクの下位16ビット
-  filter.FilterScale          = CAN_FILTERSCALE_32BIT; // 32モード
-  filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;      // FIFO0へ格納
-  filter.FilterBank           = 0;
-  filter.FilterMode           = CAN_FILTERMODE_IDMASK; // IDマスクモード
-  filter.SlaveStartFilterBank = 14;
-  filter.FilterActivation     = ENABLE;
+    filter.FilterIdHigh         = fId >> 16;             // フィルターIDの上位16ビット
+    filter.FilterIdLow          = fId;                   // フィルターIDの下位16ビット
+    filter.FilterMaskIdHigh     = fMask >> 16;           // フィルターマスクの上位16ビット
+    filter.FilterMaskIdLow      = fMask;                 // フィルターマスクの下位16ビット
+    filter.FilterScale          = CAN_FILTERSCALE_32BIT; // 32モード
+    filter.FilterFIFOAssignment = CAN_FILTER_FIFO0;      // FIFO0へ格納
+    filter.FilterBank           = 0;
+    filter.FilterMode           = CAN_FILTERMODE_IDMASK; // IDマスクモード
+    filter.SlaveStartFilterBank = 14;
+    filter.FilterActivation     = ENABLE;
 
-  HAL_CAN_ConfigFilter(&hcan, &filter);
+    HAL_CAN_ConfigFilter(&hcan, &filter);
 
-  HAL_CAN_Start(&hcan);
-  HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING);
+    HAL_CAN_Start(&hcan);
+    HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING);
 
 
-  // 最初は制御非常停止をOFFにする
-  HAL_GPIO_WritePin(EMS_GPIO_Port, EMS_Pin, GPIO_PIN_SET);
+    // 最初は制御非常停止をかけない
+    HAL_GPIO_WritePin(EMS_GPIO_Port, EMS_Pin, GPIO_PIN_SET);
 
-  // 最初に非常停止ONのCANを送る
-  CAN_TxHeaderTypeDef header;
-  uint32_t mailbox;
-  uint8_t data[8];
-  data[0] = 0x0;
-  if(0 < HAL_CAN_GetTxMailboxesFreeLevel(&hcan)){
-      header.StdId = 0x00F;
-      header.RTR = CAN_RTR_DATA;
-      header.IDE = CAN_ID_STD;
-      header.DLC = 1;
-      header.TransmitGlobalTime = DISABLE;
-      HAL_CAN_AddTxMessage(&hcan, &header, data, &mailbox);
-  }
+    // 最初に現状の非常停止の状態を送信
+    CAN_TxHeaderTypeDef header;
+    uint32_t mailbox;
+    uint8_t data[8];
+    if (HAL_GPIO_ReadPin(EMS_OBSERVE_GPIO_Port, EMS_OBSERVE_Pin)) data[0] = 0x0;
+    else data[0] = 0x1;
+    if(0 < HAL_CAN_GetTxMailboxesFreeLevel(&hcan)){
+        header.StdId = 0x00F;
+        header.RTR = CAN_RTR_DATA;
+        header.IDE = CAN_ID_STD;
+        header.DLC = 1;
+        header.TransmitGlobalTime = DISABLE;
+        HAL_CAN_AddTxMessage(&hcan, &header, data, &mailbox);
+    }
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    if(HAL_GetTick() - time > control_ms){
-        time = HAL_GetTick();
+    while (1)
+    {
+        if(HAL_GetTick() - time > control_ms){
+            time = HAL_GetTick();
 
-        if(HAL_GetTick() - time_debug > debug_ms){
-            time_debug = HAL_GetTick();
-            HAL_GPIO_TogglePin(CYCLE_LED_GPIO_Port, CYCLE_LED_Pin);
+            if(HAL_GetTick() - time_debug > debug_ms){
+                time_debug = HAL_GetTick();
+                HAL_GPIO_TogglePin(CYCLE_LED_GPIO_Port, CYCLE_LED_Pin);
+            }
         }
-    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
